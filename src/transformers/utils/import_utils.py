@@ -186,7 +186,7 @@ _tokenizers_available = _is_package_available("tokenizers")
 _torchaudio_available = _is_package_available("torchaudio")
 _torchao_available = _is_package_available("torchao")
 _torchdistx_available = _is_package_available("torchdistx")
-_torchvision_available = _is_package_available("torchvision")
+_torchvision_available, _torchvision_version = _is_package_available("torchvision", return_version=True)
 _mlx_available = _is_package_available("mlx")
 _hqq_available, _hqq_version = _is_package_available("hqq", return_version=True)
 _tiktoken_available = _is_package_available("tiktoken")
@@ -358,8 +358,27 @@ def is_torch_sdpa_available():
     return version.parse(_torch_version) >= version.parse("2.1.1")
 
 
+def is_torch_flex_attn_available():
+    if not is_torch_available():
+        return False
+    elif _torch_version == "N/A":
+        return False
+
+    # TODO check if some bugs cause push backs on the exact version
+    # NOTE: We require torch>=2.5.0 as it is the first release
+    return version.parse(_torch_version) >= version.parse("2.5.0")
+
+
 def is_torchvision_available():
     return _torchvision_available
+
+
+def is_torchvision_v2_available():
+    if not is_torchvision_available():
+        return False
+
+    # NOTE: We require torchvision>=0.15 as v2 transforms are available from this version: https://pytorch.org/vision/stable/transforms.html#v1-or-v2-which-one-should-i-use
+    return version.parse(_torchvision_version) >= version.parse("0.15")
 
 
 def is_galore_torch_available():
@@ -676,25 +695,27 @@ def is_torch_npu_available(check_device=False):
 
 @lru_cache()
 def is_torch_mlu_available(check_device=False):
-    "Checks if `torch_mlu` is installed and potentially if a MLU is in the environment"
+    """
+    Checks if `mlu` is available via an `cndev-based` check which won't trigger the drivers and leave mlu
+    uninitialized.
+    """
     if not _torch_available or importlib.util.find_spec("torch_mlu") is None:
         return False
 
     import torch
     import torch_mlu  # noqa: F401
 
-    from ..dependency_versions_table import deps
+    pytorch_cndev_based_mlu_check_previous_value = os.environ.get("PYTORCH_CNDEV_BASED_MLU_CHECK")
+    try:
+        os.environ["PYTORCH_CNDEV_BASED_MLU_CHECK"] = str(1)
+        available = torch.mlu.is_available()
+    finally:
+        if pytorch_cndev_based_mlu_check_previous_value:
+            os.environ["PYTORCH_CNDEV_BASED_MLU_CHECK"] = pytorch_cndev_based_mlu_check_previous_value
+        else:
+            os.environ.pop("PYTORCH_CNDEV_BASED_MLU_CHECK", None)
 
-    deps["deepspeed"] = "deepspeed-mlu>=0.10.1"
-
-    if check_device:
-        try:
-            # Will raise a RuntimeError if no MLU is found
-            _ = torch.mlu.device_count()
-            return torch.mlu.is_available()
-        except RuntimeError:
-            return False
-    return hasattr(torch, "mlu") and torch.mlu.is_available()
+    return available
 
 
 @lru_cache()
@@ -906,6 +927,7 @@ def is_flash_attn_2_available():
         return False
 
 
+@lru_cache()
 def is_flash_attn_greater_or_equal_2_10():
     if not _is_package_available("flash_attn"):
         return False
@@ -919,6 +941,14 @@ def is_flash_attn_greater_or_equal(library_version: str):
         return False
 
     return version.parse(importlib.metadata.version("flash_attn")) >= version.parse(library_version)
+
+
+@lru_cache()
+def is_torch_greater_or_equal(library_version: str):
+    if not _is_package_available("torch"):
+        return False
+
+    return version.parse(importlib.metadata.version("torch")) >= version.parse(library_version)
 
 
 def is_torchdistx_available():
@@ -965,13 +995,6 @@ def is_optimum_available():
 
 def is_auto_awq_available():
     return _auto_awq_available
-
-
-def is_quanto_available():
-    logger.warning_once(
-        "Importing from quanto will be deprecated in v4.47. Please install optimum-quanto instrad `pip install optimum-quanto`"
-    )
-    return _quanto_available
 
 
 def is_optimum_quanto_available():

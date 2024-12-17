@@ -19,7 +19,7 @@ State-of-the-art Machine Learning for [PyTorch](https://pytorch.org/), [TensorFl
 
 🤗 Transformers provides APIs and tools to easily download and train state-of-the-art pretrained models. Using pretrained models can reduce your compute costs, carbon footprint, and save you the time and resources required to train a model from scratch. These models support common tasks in different modalities, such as:
 
-📝 **Natural Language Processing**: text classification, named entity recognition, question answering, language modeling, summarization, translation, multiple choice, and text generation.<br>
+📝 **Natural Language Processing**: text classification, named entity recognition, question answering, language modeling, code generation, summarization, translation, multiple choice, and text generation.<br>
 🖼️ **Computer Vision**: image classification, object detection, and segmentation.<br>
 🗣️ **Audio**: automatic speech recognition and audio classification.<br>
 🐙 **Multimodal**: table question answering, optical character recognition, information extraction from scanned documents, video classification, and visual question answering.
@@ -62,6 +62,8 @@ Flax), PyTorch, and/or TensorFlow.
 |                        [ALBERT](model_doc/albert)                        |       ✅        |         ✅         |      ✅      |
 |                         [ALIGN](model_doc/align)                         |       ✅        |         ❌         |      ❌      |
 |                       [AltCLIP](model_doc/altclip)                       |       ✅        |         ❌         |      ❌      |
+|                          [Aria](model_doc/aria)                          |       ✅        |         ❌         |      ❌      |
+|                     [AriaText](model_doc/aria_text)                      |       ✅        |         ❌         |      ❌      |
 | [Audio Spectrogram Transformer](model_doc/audio-spectrogram-transformer) |       ✅        |         ❌         |      ❌      |
 |                    [Autoformer](model_doc/autoformer)                    |       ✅        |         ❌         |      ❌      |
 |                          [Bark](model_doc/bark)                          |       ✅        |         ❌         |      ❌      |
@@ -97,6 +99,7 @@ Flax), PyTorch, and/or TensorFlow.
 |                       [CodeGen](model_doc/codegen)                       |       ✅        |         ❌         |      ❌      |
 |                    [CodeLlama](model_doc/code_llama)                     |       ✅        |         ❌         |      ✅      |
 |                        [Cohere](model_doc/cohere)                        |       ✅        |         ❌         |      ❌      |
+|                       [Cohere2](model_doc/cohere2)                       |       ✅        |         ❌         |      ❌      |
 |              [Conditional DETR](model_doc/conditional_detr)              |       ✅        |         ❌         |      ❌      |
 |                      [ConvBERT](model_doc/convbert)                      |       ✅        |         ✅         |      ❌      |
 |                      [ConvNeXT](model_doc/convnext)                      |       ✅        |         ✅         |      ❌      |
@@ -168,9 +171,11 @@ Flax), PyTorch, and/or TensorFlow.
 |                         [Hiera](model_doc/hiera)                         |       ✅        |         ❌         |      ❌      |
 |                        [Hubert](model_doc/hubert)                        |       ✅        |         ✅         |      ❌      |
 |                        [I-BERT](model_doc/ibert)                         |       ✅        |         ❌         |      ❌      |
+|                        [I-JEPA](model_doc/ijepa)                         |       ✅        |         ❌         |      ❌      |
 |                       [IDEFICS](model_doc/idefics)                       |       ✅        |         ✅         |      ❌      |
 |                      [Idefics2](model_doc/idefics2)                      |       ✅        |         ❌         |      ❌      |
 |                      [Idefics3](model_doc/idefics3)                      |       ✅        |         ❌         |      ❌      |
+|          [Idefics3VisionTransformer](model_doc/idefics3_vision)          |       ❌        |         ❌         |      ❌      |
 |                      [ImageGPT](model_doc/imagegpt)                      |       ✅        |         ❌         |      ❌      |
 |                      [Informer](model_doc/informer)                      |       ✅        |         ❌         |      ❌      |
 |                  [InstructBLIP](model_doc/instructblip)                  |       ✅        |         ❌         |      ❌      |
@@ -240,6 +245,7 @@ Flax), PyTorch, and/or TensorFlow.
 |                        [Nougat](model_doc/nougat)                        |       ✅        |         ✅         |      ✅      |
 |                 [Nyströmformer](model_doc/nystromformer)                 |       ✅        |         ❌         |      ❌      |
 |                          [OLMo](model_doc/olmo)                          |       ✅        |         ❌         |      ❌      |
+|                         [OLMo2](model_doc/olmo2)                         |       ✅        |         ❌         |      ❌      |
 |                         [OLMoE](model_doc/olmoe)                         |       ✅        |         ❌         |      ❌      |
 |                   [OmDet-Turbo](model_doc/omdet-turbo)                   |       ✅        |         ❌         |      ❌      |
 |                     [OneFormer](model_doc/oneformer)                     |       ✅        |         ❌         |      ❌      |
@@ -317,6 +323,7 @@ Flax), PyTorch, and/or TensorFlow.
 |                         [TAPEX](model_doc/tapex)                         |       ✅        |         ✅         |      ✅      |
 |       [Time Series Transformer](model_doc/time_series_transformer)       |       ✅        |         ❌         |      ❌      |
 |                   [TimeSformer](model_doc/timesformer)                   |       ✅        |         ❌         |      ❌      |
+|                [TimmWrapperModel](model_doc/timm_wrapper)                |       ✅        |         ❌         |      ❌      |
 |        [Trajectory Transformer](model_doc/trajectory_transformer)        |       ✅        |         ❌         |      ❌      |
 |                  [Transformer-XL](model_doc/transfo-xl)                  |       ✅        |         ✅         |      ❌      |
 |                         [TrOCR](model_doc/trocr)                         |       ✅        |         ❌         |      ❌      |

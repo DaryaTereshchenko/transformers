@@ -36,6 +36,7 @@ from ..llama.modeling_llama import (
     LlamaForSequenceClassification,
     LlamaForTokenClassification,
     LlamaModel,
+    LlamaPreTrainedModel,
     apply_rotary_pos_emb,
     repeat_kv,
 )
@@ -49,6 +50,7 @@ VOCAB_FILES_NAMES = {"vocab_file": "tokenizer.model"}
 
 SPIECE_UNDERLINE = "▁"
 
+_CHECKPOINT_FOR_DOC = "google/gemma-7b"
 
 logger = logging.get_logger(__name__)
 
@@ -802,6 +804,10 @@ class GemmaDecoderLayer(LlamaDecoderLayer):
         return outputs
 
 
+class GemmaPreTrainedModel(LlamaPreTrainedModel):
+    pass
+
+
 class GemmaModel(LlamaModel):
     def __init__(self, config: GemmaConfig):
         super().__init__(config)
@@ -885,7 +891,7 @@ class GemmaModel(LlamaModel):
         all_self_attns = () if output_attentions else None
         next_decoder_cache = None
 
-        for decoder_layer in self.layers:
+        for decoder_layer in self.layers[: self.config.num_hidden_layers]:
             if output_hidden_states:
                 all_hidden_states += (hidden_states,)
 
@@ -960,6 +966,7 @@ class GemmaForCausalLM(LlamaForCausalLM):
         return_dict: Optional[bool] = None,
         cache_position: Optional[torch.LongTensor] = None,
         num_logits_to_keep: int = 0,
+        **loss_kwargs,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
         r"""
         ```python
@@ -1002,7 +1009,7 @@ class GemmaForCausalLM(LlamaForCausalLM):
 
         loss = None
         if labels is not None:
-            loss = self.loss_function(logits, labels, self.vocab_size)
+            loss = self.loss_function(logits, labels, self.vocab_size, **loss_kwargs)
 
         if not return_dict:
             output = (logits,) + outputs[1:]
@@ -1038,4 +1045,5 @@ __all__ = [
     "GemmaForCausalLM",
     "GemmaForSequenceClassification",
     "GemmaForTokenClassification",
+    "GemmaPreTrainedModel",
 ]

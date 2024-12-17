@@ -24,7 +24,7 @@ import torch.utils.checkpoint
 from torch import Size, Tensor, nn
 
 from ...activations import ACT2FN
-from ...cache_utils import Cache, StaticCache
+from ...cache_utils import Cache, DynamicCache, StaticCache
 from ...generation import GenerationMixin
 from ...modeling_attn_mask_utils import AttentionMaskConverter
 from ...modeling_flash_attention_utils import _flash_attention_forward
@@ -39,6 +39,7 @@ from ...modeling_rope_utils import ROPE_INIT_FUNCTIONS
 from ...modeling_utils import PreTrainedModel
 from ...pytorch_utils import ALL_LAYERNORM_LAYERS
 from ...utils import (
+    add_code_sample_docstrings,
     add_start_docstrings,
     add_start_docstrings_to_model_forward,
     is_flash_attn_greater_or_equal_2_10,
@@ -50,6 +51,7 @@ from .configuration_nemotron import NemotronConfig
 
 logger = logging.get_logger(__name__)
 
+_CHECKPOINT_FOR_DOC = "nvidia/nemotron-3-8b-base-4k-hf"
 _CONFIG_FOR_DOC = "NemotronConfig"
 
 
@@ -74,7 +76,7 @@ class NemotronLayerNorm1P(nn.LayerNorm):
 
     def forward(self, input: Tensor) -> Tensor:
         args = _cast_if_autocast_enabled(input, self.normalized_shape, self.weight + 1, self.bias, self.eps)
-        with torch.cuda.amp.autocast(enabled=False):
+        with torch.amp.autocast(input.device.type, enabled=False):
             return F.layer_norm(*args)
 
 
@@ -534,7 +536,7 @@ class NemotronDecoderLayer(nn.Module):
         output_attentions: Optional[bool] = False,
         use_cache: Optional[bool] = False,
         cache_position: Optional[torch.LongTensor] = None,
-        position_embeddings: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,  # will become mandatory in v4.46
+        position_embeddings: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,  # necessary, but kept here for BC
         **kwargs,
     ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
         """
@@ -778,11 +780,20 @@ class NemotronModel(NemotronPreTrainedModel):
             )
             use_cache = False
 
+        if use_cache and past_key_values is None:
+            past_key_values = DynamicCache()
+
         if inputs_embeds is None:
             inputs_embeds = self.embed_tokens(input_ids)
 
+        if use_cache and past_key_values is None:
+            past_key_values = DynamicCache()
+
         if cache_position is None:
-            cache_position = torch.arange(inputs_embeds.shape[1], device=inputs_embeds.device)
+            past_seen_tokens = past_key_values.get_seq_length() if past_key_values is not None else 0
+            cache_position = torch.arange(
+                past_seen_tokens, past_seen_tokens + inputs_embeds.shape[1], device=inputs_embeds.device
+            )
         if position_ids is None:
             position_ids = cache_position.unsqueeze(0)
 
@@ -978,7 +989,7 @@ class NemotronModel(NemotronPreTrainedModel):
         return causal_mask
 
 
-# Copied from transformers.models.llama.modeling_llama.LlamaForCausalLM with LLAMA->NEMOTRON,Llama->Nemotron,llama->nemotron
+# TODO: re-enable check: Copied from transformers.models.llama.modeling_llama.LlamaForCausalLM with LLAMA->NEMOTRON,Llama->Nemotron,llama->nemotron
 class NemotronForCausalLM(NemotronPreTrainedModel, GenerationMixin):
     _tied_weights_keys = ["lm_head.weight"]
 
@@ -1026,6 +1037,7 @@ class NemotronForCausalLM(NemotronPreTrainedModel, GenerationMixin):
         return_dict: Optional[bool] = None,
         cache_position: Optional[torch.LongTensor] = None,
         num_logits_to_keep: int = 0,
+        **loss_kwargs,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
         r"""
         Args:
@@ -1083,7 +1095,7 @@ class NemotronForCausalLM(NemotronPreTrainedModel, GenerationMixin):
 
         loss = None
         if labels is not None:
-            loss = self.loss_function(logits, labels, self.vocab_size)
+            loss = self.loss_function(logits, labels, self.vocab_size, **loss_kwargs)
 
         if not return_dict:
             output = (logits,) + outputs[1:]
@@ -1323,6 +1335,11 @@ class NemotronForTokenClassification(NemotronPreTrainedModel):
         self.model.embed_tokens = value
 
     @add_start_docstrings_to_model_forward(NEMOTRON_INPUTS_DOCSTRING)
+    @add_code_sample_docstrings(
+        checkpoint=_CHECKPOINT_FOR_DOC,
+        output_type=TokenClassifierOutput,
+        config_class=_CONFIG_FOR_DOC,
+    )
     def forward(
         self,
         input_ids: Optional[torch.LongTensor] = None,

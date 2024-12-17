@@ -29,6 +29,7 @@ from transformers import (
     BitsAndBytesConfig,
     pipeline,
 )
+from transformers.models.opt.modeling_opt import OPTAttention
 from transformers.testing_utils import (
     apply_skip_if_not_implemented,
     is_bitsandbytes_available,
@@ -384,14 +385,14 @@ class Bnb4BitT5Test(unittest.TestCase):
 
         # test with `google-t5/t5-small`
         model = T5ForConditionalGeneration.from_pretrained(self.model_name, load_in_4bit=True, device_map="auto")
-        encoded_input = self.tokenizer(self.input_text, return_tensors="pt").to(torch_device)
+        encoded_input = self.tokenizer(self.input_text, return_tensors="pt").to(model.device)
         _ = model.generate(**encoded_input)
 
         # test with `flan-t5-small`
         model = T5ForConditionalGeneration.from_pretrained(
             self.dense_act_model_name, load_in_4bit=True, device_map="auto"
         )
-        encoded_input = self.tokenizer(self.input_text, return_tensors="pt").to(torch_device)
+        encoded_input = self.tokenizer(self.input_text, return_tensors="pt").to(model.device)
         _ = model.generate(**encoded_input)
         T5ForConditionalGeneration._keep_in_fp32_modules = modules
 
@@ -409,14 +410,14 @@ class Bnb4BitT5Test(unittest.TestCase):
         # there was a bug with decoders - this test checks that it is fixed
         self.assertTrue(isinstance(model.decoder.block[0].layer[0].SelfAttention.q, bnb.nn.Linear4bit))
 
-        encoded_input = self.tokenizer(self.input_text, return_tensors="pt").to(torch_device)
+        encoded_input = self.tokenizer(self.input_text, return_tensors="pt").to(model.device)
         _ = model.generate(**encoded_input)
 
         # test with `flan-t5-small`
         model = T5ForConditionalGeneration.from_pretrained(
             self.dense_act_model_name, load_in_4bit=True, device_map="auto"
         )
-        encoded_input = self.tokenizer(self.input_text, return_tensors="pt").to(torch_device)
+        encoded_input = self.tokenizer(self.input_text, return_tensors="pt").to(model.device)
         _ = model.generate(**encoded_input)
 
 
@@ -565,7 +566,7 @@ class Bnb4BitTestTraining(Base4bitTest):
 
         # Step 2: add adapters
         for _, module in model.named_modules():
-            if "OPTAttention" in repr(type(module)):
+            if isinstance(module, OPTAttention):
                 module.q_proj = LoRALayer(module.q_proj, rank=16)
                 module.k_proj = LoRALayer(module.k_proj, rank=16)
                 module.v_proj = LoRALayer(module.v_proj, rank=16)
